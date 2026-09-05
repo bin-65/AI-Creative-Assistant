@@ -6,12 +6,12 @@ def call_groq_ai(prompt_text):
     clean_key = str(api_key).strip().strip('"').strip("'")
     client = Groq(api_key=clean_key)
     
-    # Active & Supported Groq Models
+    # Fast Instant Model First (Super Lightweight)
     models_to_try = [
-        "llama-3.3-70b-versatile",
         "llama-3.1-8b-instant",
-        "llama3-70b-8192",
-        "llama3-8b-8192"
+        "llama3-8b-8192",
+        "llama-3.3-70b-versatile",
+        "llama3-70b-8192"
     ]
     
     last_err = ""
