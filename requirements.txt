@@ -1,3 +1,6 @@
 streamlit
-groq
+google-genai
 fpdf2
+python-docx
+python-pptx
+pypdf
