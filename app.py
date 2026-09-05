@@ -71,7 +71,7 @@ def generate_docx_bytes(title, text_content):
     doc.save(bio)
     return bio.getvalue()
 
-# Gemini AI Engine Function (FIXED MODEL NAME HERE)
+# Gemini AI Engine Function (FIXED TO GEMINI 2.0 FLASH)
 def call_gemini_ai(prompt_text):
     api_key = st.secrets.get("GEMINI_API_KEY", "")
     if not api_key:
@@ -82,7 +82,7 @@ def call_gemini_ai(prompt_text):
     
     try:
         response = client.models.generate_content(
-            model='gemini-1.5-flash',
+            model='gemini-2.0-flash',
             contents=prompt_text,
         )
         return response.text
