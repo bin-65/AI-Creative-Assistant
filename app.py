@@ -10,7 +10,7 @@ import io
 
 # Page configuration
 st.set_page_config(
-    page_title="AI Multi-Tool Studio", 
+    page_title="Usman AI Studio", 
     page_icon="⚡", 
     layout="wide",
     initial_sidebar_state="expanded"
@@ -45,7 +45,7 @@ st.markdown("""
 # Main Top Header Bar
 st.markdown("""
     <div class="header-box">
-        <div class="main-title">⚡ AI Multi-Tool Studio</div>
+        <div class="main-title">⚡ Usman AI Studio</div>
         <div class="sub-title">Powered by Google Gemini AI</div>
     </div>
 """, unsafe_allow_html=True)
@@ -71,7 +71,7 @@ def generate_docx_bytes(title, text_content):
     doc.save(bio)
     return bio.getvalue()
 
-# Gemini AI Engine Function (UPDATED MODEL NAME TO gemini-3.6-flash)
+# Gemini AI Engine Function
 def call_gemini_ai(prompt_text):
     api_key = st.secrets.get("GEMINI_API_KEY", "")
     if not api_key:
@@ -91,7 +91,7 @@ def call_gemini_ai(prompt_text):
 
 # System Status Sidebar
 st.sidebar.markdown("### ⚙️ System Status")
-st.sidebar.success("✨ **Google Gemini Active**")
+st.sidebar.success("✨ **Usman AI Studio Active**")
 st.sidebar.markdown("---")
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
