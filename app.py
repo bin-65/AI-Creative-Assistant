@@ -42,15 +42,13 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Main Top Header Bar
 st.markdown("""
     <div class="header-box">
         <div class="main-title">⚡ AI Multi-Tool Studio</div>
-        <div class="sub-title">Powered by Ultra-Fast Groq Engine</div>
+        <div class="sub-title">Powered by Groq Engine</div>
     </div>
 """, unsafe_allow_html=True)
 
-# PDF Generator Helper
 def generate_pdf_bytes(title, text_content):
     pdf = FPDF()
     pdf.add_page()
@@ -62,7 +60,6 @@ def generate_pdf_bytes(title, text_content):
     pdf.multi_cell(0, 7, clean_text)
     return bytes(pdf.output())
 
-# Word Generator Helper
 def generate_docx_bytes(title, text_content):
     doc = Document()
     doc.add_heading(title, 0)
@@ -72,31 +69,23 @@ def generate_docx_bytes(title, text_content):
     doc.save(bio)
     return bio.getvalue()
 
-# Ultra-Stable Groq Call
+# Direct Error Tracing Call
 def call_groq_ai(prompt_text):
     api_key = st.secrets.get("GROQ_API_KEY")
     if not api_key:
-        raise Exception("GROQ_API_KEY Missing in Streamlit Secrets!")
+        raise Exception("Streamlit Secrets mein 'GROQ_API_KEY' nahi mili. Secrets Settings check karein.")
     
-    client = Groq(api_key=api_key)
+    client = Groq(api_key=api_key.strip())
     
-    models_to_try = [
-        "llama-3.3-70b-versatile",
-        "llama-3.1-8b-instant",
-        "mixtral-8x7b-32768"
-    ]
-    
-    for model_name in models_to_try:
-        try:
-            response = client.chat.completions.create(
-                messages=[{"role": "user", "content": prompt_text}],
-                model=model_name,
-            )
-            return response.choices[0].message.content
-        except Exception:
-            continue
-
-    raise Exception("Groq API Execution Failed. Please check API Key in Secrets.")
+    # Simple direct call to get exact exception trace
+    try:
+        response = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt_text}],
+            model="llama-3.3-70b-versatile",
+        )
+        return response.choices[0].message.content
+    except Exception as err:
+        raise Exception(f"Groq Direct API Error: {str(err)}")
 
 # System Status Sidebar
 st.sidebar.markdown("### ⚙️ System Status")
