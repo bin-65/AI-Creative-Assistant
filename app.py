@@ -86,7 +86,7 @@ def generate_docx_bytes(title, text_content):
     except Exception:
         return text_content.encode("utf-8")
 
-# Multi-Key Rotation Engine with Correct Active Models
+# Multi-Key Rotation Engine with Official Stable Model Names
 def call_gemini_ai(prompt_text):
     raw_keys = st.secrets.get("GEMINI_API_KEY", "")
     if not raw_keys:
@@ -95,12 +95,11 @@ def call_gemini_ai(prompt_text):
     # Extract keys (split by comma if multiple keys are provided)
     keys_list = [k.strip().strip('"').strip("'") for k in str(raw_keys).split(",") if k.strip()]
     
-    # Updated active models compatible with google-genai SDK
+    # Official stable models supported by google-genai SDK
     models_to_try = [
         "gemini-2.5-flash",
-        "gemini-2.0-flash",
-        "gemini-1.5-flash-latest",
-        "gemini-1.5-pro-latest"
+        "gemini-2.5-pro",
+        "gemini-2.0-flash"
     ]
     
     last_error_msg = ""
