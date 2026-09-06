@@ -21,7 +21,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom Styling
+# Custom Styling (PowerPoint Design Gallery Card Styling)
 st.markdown("""
     <style>
     .stApp { background-color: #f8fafc; color: #1e293b; }
@@ -37,18 +37,21 @@ st.markdown("""
         background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
         color: #ffffff !important; border: none !important;
         border-radius: 8px !important; font-weight: 600 !important;
-        padding: 8px 18px !important; transition: all 0.3s ease !important;
+        width: 100% !important; padding: 6px 12px !important; margin-top: 4px !important;
     }
-    .stTabs [data-baseweb="tab-list"] { gap: 8px; }
-    .stTabs [data-baseweb="tab"] {
-        border-radius: 8px; padding: 8px 18px; background-color: #ffffff;
-        color: #475569; border: 1px solid #e2e8f0;
+    
+    /* PPT Template Preview Cards */
+    .ppt-card {
+        border: 2px solid #cbd5e1; border-radius: 8px; padding: 12px;
+        height: 120px; display: flex; flex-direction: column; justify-content: space-between;
+        margin-bottom: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
-    .stTabs [aria-selected="true"] { background-color: #0284c7 !important; color: #ffffff !important; border: none !important; }
+    .palette-dots { display: flex; gap: 4px; margin-top: 6px; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
     </style>
 """, unsafe_allow_html=True)
 
-# Header Bar
+# Main Top Header Bar
 st.markdown("""
     <div class="header-box">
         <div class="main-title">⚡ Usman AI Studio</div>
@@ -78,61 +81,61 @@ def generate_docx_bytes(title, text_content):
     doc.save(bio)
     return bio.getvalue()
 
-# Advanced PPT Generator supporting 10 structural PowerPoint layouts
-def generate_pptx_bytes(title, text_content, template_style="Corporate Banner Blue"):
+# Advanced PPT Engine generating MS PowerPoint Native Themes
+def generate_pptx_bytes(title, text_content, theme_name="Facet Modern"):
     prs = Presentation()
-    blank_layout = prs.slide_layouts[6] # Blank slide for full custom shape control
+    blank_layout = prs.slide_layouts[6]
 
-    # Palette & Layout Configurations
-    configs = {
-        "Corporate Banner Blue": {"primary": RGBColor(3, 105, 161), "accent": RGBColor(186, 230, 253), "bg": RGBColor(255, 255, 255), "text": RGBColor(30, 41, 59)},
-        "Modern Side Border": {"primary": RGBColor(124, 58, 237), "accent": RGBColor(221, 214, 254), "bg": RGBColor(255, 255, 255), "text": RGBColor(15, 23, 42)},
-        "Dark Tech Neon": {"primary": RGBColor(6, 182, 212), "accent": RGBColor(30, 41, 59), "bg": RGBColor(15, 23, 42), "text": RGBColor(241, 245, 249)},
-        "Executive Burgundy Header": {"primary": RGBColor(159, 18, 57), "accent": RGBColor(254, 205, 211), "bg": RGBColor(255, 255, 255), "text": RGBColor(30, 41, 59)},
-        "Engineering Steel Grid": {"primary": RGBColor(217, 119, 6), "accent": RGBColor(254, 243, 199), "bg": RGBColor(248, 250, 252), "text": RGBColor(30, 41, 59)},
-        "Academic Emerald Clean": {"primary": RGBColor(5, 150, 105), "accent": RGBColor(167, 243, 208), "bg": RGBColor(255, 255, 255), "text": RGBColor(30, 41, 59)},
-        "Startup Pitch Card": {"primary": RGBColor(79, 70, 229), "accent": RGBColor(224, 231, 255), "bg": RGBColor(249, 250, 251), "text": RGBColor(17, 24, 39)},
-        "Medical Healthcare Soft": {"primary": RGBColor(13, 148, 136), "accent": RGBColor(204, 251, 241), "bg": RGBColor(255, 255, 255), "text": RGBColor(30, 41, 59)},
-        "Creative Vibrant Pink": {"primary": RGBColor(219, 39, 119), "accent": RGBColor(252, 231, 243), "bg": RGBColor(255, 255, 255), "text": RGBColor(30, 41, 59)},
-        "Minimal Gray Structure": {"primary": RGBColor(71, 85, 105), "accent": RGBColor(226, 232, 240), "bg": RGBColor(255, 255, 255), "text": RGBColor(30, 41, 59)}
+    # 10 PowerPoint Themes Styling Dictionary
+    PPT_THEMES = {
+        "Facet Modern": {"bg": RGBColor(255, 255, 255), "primary": RGBColor(3, 169, 244), "title_color": RGBColor(1, 87, 155), "text": RGBColor(33, 33, 33), "font": "Segoe UI", "layout": "top_bar"},
+        "Integral Dark": {"bg": RGBColor(33, 33, 33), "primary": RGBColor(255, 112, 67), "title_color": RGBColor(255, 171, 145), "text": RGBColor(245, 245, 245), "font": "Trebuchet MS", "layout": "full_dark"},
+        "Ion Purple": {"bg": RGBColor(250, 245, 255), "primary": RGBColor(147, 51, 234), "title_color": RGBColor(88, 28, 135), "text": RGBColor(58, 12, 90), "font": "Calibri", "layout": "side_stripe"},
+        "Organic Emerald": {"bg": RGBColor(240, 253, 244), "primary": RGBColor(16, 185, 129), "title_color": RGBColor(6, 78, 59), "text": RGBColor(20, 83, 45), "font": "Georgia", "layout": "bottom_accent"},
+        "Slice Crimson": {"bg": RGBColor(255, 255, 255), "primary": RGBColor(225, 29, 72), "title_color": RGBColor(136, 19, 55), "text": RGBColor(30, 41, 59), "font": "Arial Black", "layout": "top_bar"},
+        "Retrospect Gold": {"bg": RGBColor(254, 252, 232), "primary": RGBColor(202, 138, 4), "title_color": RGBColor(113, 63, 18), "text": RGBColor(66, 32, 6), "font": "Garamond", "layout": "side_stripe"},
+        "Slate Minimal": {"bg": RGBColor(248, 250, 252), "primary": RGBColor(71, 85, 105), "title_color": RGBColor(15, 23, 42), "text": RGBColor(51, 65, 85), "font": "Calibri", "layout": "bottom_accent"},
+        "Vapor Neon": {"bg": RGBColor(15, 23, 42), "primary": RGBColor(6, 182, 212), "title_color": RGBColor(165, 243, 252), "text": RGBColor(226, 232, 240), "font": "Consolas", "layout": "full_dark"},
+        "Warm Ochre": {"bg": RGBColor(255, 247, 237), "primary": RGBColor(234, 88, 12), "title_color": RGBColor(154, 52, 18), "text": RGBColor(67, 20, 7), "font": "Tahoma", "layout": "top_bar"},
+        "Teal Tech": {"bg": RGBColor(240, 253, 250), "primary": RGBColor(13, 148, 136), "title_color": RGBColor(19, 78, 74), "text": RGBColor(15, 118, 110), "font": "Segoe UI", "layout": "side_stripe"},
     }
-    
-    cfg = configs.get(template_style, configs["Corporate Banner Blue"])
 
-    # Slide 1: Title Slide
+    thm = PPT_THEMES.get(theme_name, PPT_THEMES["Facet Modern"])
+
+    # Slide 1: Main Title Slide
     slide1 = prs.slides.add_slide(blank_layout)
-    
-    # Background Shape
-    bg_shape = slide1.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, Inches(10), Inches(7.5))
-    bg_shape.fill.solid()
-    bg_shape.fill.fore_color.rgb = cfg["bg"]
-    bg_shape.line.fill.background()
+    s1_bg = slide1.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, Inches(10), Inches(7.5))
+    s1_bg.fill.solid()
+    s1_bg.fill.fore_color.rgb = thm["bg"]
+    s1_bg.line.fill.background()
 
-    # Decorative Header Card
-    hdr_box = slide1.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(1), Inches(2), Inches(8), Inches(3))
-    hdr_box.fill.solid()
-    hdr_box.fill.fore_color.rgb = cfg["primary"]
-    hdr_box.line.fill.background()
+    # Title Card Accent
+    card = slide1.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(1), Inches(2), Inches(8), Inches(3.5))
+    card.fill.solid()
+    card.fill.fore_color.rgb = thm["primary"]
+    card.line.fill.background()
 
-    tf1 = hdr_box.text_frame
+    tf1 = card.text_frame
     tf1.word_wrap = True
     p1 = tf1.paragraphs[0]
     p1.text = title
+    p1.font.name = thm["font"]
     p1.font.bold = True
     p1.font.size = Pt(32)
     p1.font.color.rgb = RGBColor(255, 255, 255)
     p1.alignment = PP_ALIGN.CENTER
 
     p2 = tf1.add_paragraph()
-    p2.text = f"\nTemplate Style: {template_style}\nGenerated by Usman AI Studio"
+    p2.text = f"\nPowerPoint Theme: {theme_name}\nGenerated by Usman AI Studio"
+    p2.font.name = thm["font"]
     p2.font.size = Pt(14)
-    p2.font.color.rgb = cfg["accent"]
+    p2.font.color.rgb = RGBColor(245, 245, 245)
     p2.alignment = PP_ALIGN.CENTER
 
-    # Content Slides Creation
+    # Content Slides
     paragraphs = [p.strip() for p in text_content.split("\n\n") if p.strip()]
     chunk_size = 3
-    
+
     for i in range(0, len(paragraphs), chunk_size):
         chunk = paragraphs[i:i + chunk_size]
         slide = prs.slides.add_slide(blank_layout)
@@ -140,39 +143,63 @@ def generate_pptx_bytes(title, text_content, template_style="Corporate Banner Bl
         # Slide Background
         s_bg = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, Inches(10), Inches(7.5))
         s_bg.fill.solid()
-        s_bg.fill.fore_color.rgb = cfg["bg"]
+        s_bg.fill.fore_color.rgb = thm["bg"]
         s_bg.line.fill.background()
 
-        # Top Banner / Side Structural Element
-        top_bar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, Inches(10), Inches(1.1))
-        top_bar.fill.solid()
-        top_bar.fill.fore_color.rgb = cfg["primary"]
-        top_bar.line.fill.background()
+        # Layout Geometry
+        if thm["layout"] == "top_bar":
+            bar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, Inches(10), Inches(1.2))
+            bar.fill.solid()
+            bar.fill.fore_color.rgb = thm["primary"]
+            bar.line.fill.background()
+            
+            tb = slide.shapes.add_textbox(Inches(0.5), Inches(0.2), Inches(9), Inches(0.8))
+            p = tb.text_frame.paragraphs[0]
+            p.text = f"{title} - Slide {(i // chunk_size) + 1}"
+            p.font.name = thm["font"]
+            p.font.bold = True
+            p.font.size = Pt(22)
+            p.font.color.rgb = RGBColor(255, 255, 255)
 
-        # Title Text in Banner
-        tb = slide.shapes.add_textbox(Inches(0.5), Inches(0.2), Inches(9), Inches(0.8))
-        p = tb.text_frame.paragraphs[0]
-        p.text = f"{title} - Slide {(i // chunk_size) + 1}"
-        p.font.bold = True
-        p.font.size = Pt(22)
-        p.font.color.rgb = RGBColor(255, 255, 255)
+        elif thm["layout"] == "side_stripe":
+            stripe = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, Inches(0.4), Inches(7.5))
+            stripe.fill.solid()
+            stripe.fill.fore_color.rgb = thm["primary"]
+            stripe.line.fill.background()
 
-        # Decorative Side Accent Bar
-        side_bar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.5), Inches(1.5), Inches(0.15), Inches(5.2))
-        side_bar.fill.solid()
-        side_bar.fill.fore_color.rgb = cfg["primary"]
-        side_bar.line.fill.background()
+            tb = slide.shapes.add_textbox(Inches(0.8), Inches(0.5), Inches(8.8), Inches(0.8))
+            p = tb.text_frame.paragraphs[0]
+            p.text = f"{title} - Slide {(i // chunk_size) + 1}"
+            p.font.name = thm["font"]
+            p.font.bold = True
+            p.font.size = Pt(24)
+            p.font.color.rgb = thm["title_color"]
 
-        # Content Box
-        cnt_box = slide.shapes.add_textbox(Inches(0.9), Inches(1.5), Inches(8.5), Inches(5.2))
+        else: # full_dark / bottom_accent
+            b_line = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.5), Inches(1.2), Inches(9), Inches(0.08))
+            b_line.fill.solid()
+            b_line.fill.fore_color.rgb = thm["primary"]
+            b_line.line.fill.background()
+
+            tb = slide.shapes.add_textbox(Inches(0.5), Inches(0.4), Inches(9), Inches(0.8))
+            p = tb.text_frame.paragraphs[0]
+            p.text = f"{title} - Slide {(i // chunk_size) + 1}"
+            p.font.name = thm["font"]
+            p.font.bold = True
+            p.font.size = Pt(24)
+            p.font.color.rgb = thm["title_color"]
+
+        # Content Text Box
+        cnt_box = slide.shapes.add_textbox(Inches(0.8), Inches(1.6), Inches(8.5), Inches(5))
         tf = cnt_box.text_frame
         tf.word_wrap = True
 
         for idx, para in enumerate(chunk):
             p_cnt = tf.paragraphs[0] if idx == 0 else tf.add_paragraph()
             p_cnt.text = f"•  {para}"
+            p_cnt.font.name = thm["font"]
             p_cnt.font.size = Pt(15)
-            p_cnt.font.color.rgb = cfg["text"]
+            p_cnt.font.color.rgb = thm["text"]
             p_cnt.space_after = Pt(14)
 
     bio = io.BytesIO()
@@ -222,14 +249,14 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "📑 Advanced Doc Hub"
 ])
 
-def render_output_section(result_text, doc_title, key_prefix, show_ppt=True, template_style="Corporate Banner Blue"):
+def render_output_section(result_text, doc_title, key_prefix, show_ppt=True, theme_name="Facet Modern"):
     st.markdown("---")
     st.success("🎉 Generated Successfully!")
     
     try:
         pdf_data = generate_pdf_bytes(doc_title, result_text)
         docx_data = generate_docx_bytes(doc_title, result_text)
-        pptx_data = generate_pptx_bytes(doc_title, result_text, template_style)
+        pptx_data = generate_pptx_bytes(doc_title, result_text, theme_name)
         
         if show_ppt:
             c1, c2, c3 = st.columns([1, 1, 1])
@@ -246,7 +273,7 @@ def render_output_section(result_text, doc_title, key_prefix, show_ppt=True, tem
     st.markdown("### 📄 Result Output:")
     st.markdown(result_text)
 
-# TAB 1: PRESENTATION STUDIO (10 PPT SLIDE TEMPLATES)
+# TAB 1: PRESENTATION STUDIO (MS POWERPOINT DESIGN GALLERY)
 with tab1:
     st.markdown("## Create Slides with AI & Edit with Full Control")
     ppt_mode = st.radio("Creation Mode", ["✨ From Topic", "📄 From Document", "📑 From Outline"], horizontal=True)
@@ -268,49 +295,63 @@ with tab1:
         if q4.button("Data Analysis"): topic_input = "Data Analysis Report"
 
         st.markdown("---")
-        st.markdown("### 🎨 Choose PPT Slide Template Design (10 PowerPoint Layouts)")
+        st.markdown("### 🎨 Select PowerPoint Slide Theme (10 Design Templates)")
         
-        # 10 Unique Structural PPT Templates List with previews
-        templates_list = [
-            ("Corporate Banner Blue", "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400&q=80"),
-            ("Modern Side Border", "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&q=80"),
-            ("Dark Tech Neon", "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400&q=80"),
-            ("Executive Burgundy Header", "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&q=80"),
-            ("Engineering Steel Grid", "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400&q=80"),
-            ("Academic Emerald Clean", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&q=80"),
-            ("Startup Pitch Card", "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&q=80"),
-            ("Medical Healthcare Soft", "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400&q=80"),
-            ("Creative Vibrant Pink", "https://images.unsplash.com/photo-1533750349088-cd871a92f312?w=400&q=80"),
-            ("Minimal Gray Structure", "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&q=80"),
+        # 10 MS PowerPoint Gallery Themes
+        ppt_themes_gallery = [
+            ("Facet Modern", "#ffffff", "#03a9f4", ["#01579b", "#03a9f4", "#81d4fa", "#b3e5fc"]),
+            ("Integral Dark", "#212121", "#ff7043", ["#212121", "#ff7043", "#ffab91", "#d84315"]),
+            ("Ion Purple", "#faf5ff", "#9333ea", ["#faf5ff", "#9333ea", "#c084fc", "#581c87"]),
+            ("Organic Emerald", "#f0fdf4", "#10b981", ["#f0fdf4", "#10b981", "#6ee7b7", "#064e3b"]),
+            ("Slice Crimson", "#ffffff", "#e11d48", ["#ffffff", "#e11d48", "#fda4af", "#881337"]),
+            ("Retrospect Gold", "#fefce8", "#ca8a04", ["#fefce8", "#ca8a04", "#fde047", "#713f12"]),
+            ("Slate Minimal", "#f8fafc", "#475569", ["#f8fafc", "#475569", "#94a3b8", "#0f172a"]),
+            ("Vapor Neon", "#0f172a", "#06b6d4", ["#0f172a", "#06b6d4", "#67e8f9", "#164e63"]),
+            ("Warm Ochre", "#fff7ed", "#ea580c", ["#fff7ed", "#ea580c", "#fdba74", "#7c2d12"]),
+            ("Teal Tech", "#f0fdfa", "#0d9488", ["#f0fdfa", "#0d9488", "#5eead4", "#134e4a"]),
         ]
 
-        # Displaying 10 Templates Grid (5 cols x 2 rows)
-        row1_cols = st.columns(5)
-        for idx, (t_name, t_img) in enumerate(templates_list[:5]):
-            with row1_cols[idx]:
-                st.image(t_img, caption=t_name, use_container_width=True)
-                if st.button(f"Select Layout {idx+1}", key=f"tpl_btn_{idx}"):
-                    st.session_state["selected_tpl"] = t_name
+        # Gallery Cards Rendering (5 Columns x 2 Rows)
+        row1 = st.columns(5)
+        for idx, (t_name, bg_c, pri_c, palette) in enumerate(ppt_themes_gallery[:5]):
+            with row1[idx]:
+                dots_html = "".join([f'<span class="dot" style="background-color:{c};"></span>' for c in palette])
+                st.markdown(f"""
+                    <div class="ppt-card" style="background-color:{bg_c}; border-top: 4px solid {pri_c};">
+                        <div style="font-size:22px; font-weight:800; color:{pri_c};">Aa</div>
+                        <div style="font-size:12px; font-weight:600; color:#334155;">{t_name}</div>
+                        <div class="palette-dots">{dots_html}</div>
+                    </div>
+                """, unsafe_allow_html=True)
+                if st.button(f"Use {t_name}", key=f"thm_{idx}"):
+                    st.session_state["active_theme"] = t_name
 
-        row2_cols = st.columns(5)
-        for idx, (t_name, t_img) in enumerate(templates_list[5:]):
-            with row2_cols[idx]:
-                st.image(t_img, caption=t_name, use_container_width=True)
-                if st.button(f"Select Layout {idx+6}", key=f"tpl_btn_{idx+5}"):
-                    st.session_state["selected_tpl"] = t_name
+        row2 = st.columns(5)
+        for idx, (t_name, bg_c, pri_c, palette) in enumerate(ppt_themes_gallery[5:]):
+            with row2[idx]:
+                dots_html = "".join([f'<span class="dot" style="background-color:{c};"></span>' for c in palette])
+                st.markdown(f"""
+                    <div class="ppt-card" style="background-color:{bg_c}; border-top: 4px solid {pri_c};">
+                        <div style="font-size:22px; font-weight:800; color:{pri_c};">Aa</div>
+                        <div style="font-size:12px; font-weight:600; color:#334155;">{t_name}</div>
+                        <div class="palette-dots">{dots_html}</div>
+                    </div>
+                """, unsafe_allow_html=True)
+                if st.button(f"Use {t_name}", key=f"thm_{idx+5}"):
+                    st.session_state["active_theme"] = t_name
 
-        active_tpl = st.session_state.get("selected_tpl", "Corporate Banner Blue")
-        st.info(f"Selected PowerPoint Template: **{active_tpl}**")
+        current_thm = st.session_state.get("active_theme", "Facet Modern")
+        st.info(f"Selected PowerPoint Theme: **{current_thm}**")
 
         if st.button("🚀 Generate Presentation Slides", key="ppt_gen_btn"):
             if not topic_input.strip():
                 st.warning("⚠️ Topic field empty.")
             else:
                 try:
-                    with st.spinner(f"Creating PPT Deck with layout '{active_tpl}'..."):
-                        ppt_prompt = f"Create a structured {slide_count}-slide presentation deck on '{topic_input}'. Template Style: {active_tpl}. Format slide by slide with titles and detailed bullet points."
+                    with st.spinner(f"Creating Deck with Theme '{current_thm}'..."):
+                        ppt_prompt = f"Create a structured {slide_count}-slide presentation deck on '{topic_input}'. Design Theme: {current_thm}. Format slide by slide with titles and detailed bullet points."
                         res_text = call_gemini_ai(ppt_prompt)
-                    render_output_section(res_text, f"{topic_input}_Slides", "tab_ppt", show_ppt=True, template_style=active_tpl)
+                    render_output_section(res_text, f"{topic_input}_Slides", "tab_ppt", show_ppt=True, theme_name=current_thm)
                 except Exception as e:
                     st.error(f"Execution Error: {e}")
 
