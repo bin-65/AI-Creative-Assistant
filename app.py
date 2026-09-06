@@ -50,7 +50,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Helper Export Functions (PDF & Word Only)
+# Helper Export Functions (PDF & Word Generation)
 def generate_pdf_bytes(title, text_content):
     pdf = FPDF()
     pdf.add_page()
@@ -105,13 +105,14 @@ st.sidebar.markdown("### ⚙️ System Status")
 st.sidebar.success("✨ **Usman AI Studio Active**")
 st.sidebar.markdown("---")
 
-# Main Tabs Navigation (PPT Studio Removed)
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+# Main Tabs Navigation
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "✍️ Content Creator", 
     "🌐 Translator", 
     "⚡ Smart AI Workspace",
     "📚 Academic Writer",
-    "📑 Advanced Doc Hub"
+    "📑 Advanced Doc Hub",
+    "❓ MCQs & Quiz Generator"
 ])
 
 def render_output_section(result_text, doc_title, key_prefix):
@@ -205,3 +206,52 @@ with tab5:
             render_output_section(res_text, f"{doc_topic}_Document", "tab5")
         except Exception as e:
             st.error(f"Execution Error: {e}")
+
+# TAB 6: MCQS & QUIZ GENERATOR
+with tab6:
+    st.subheader("❓ MCQs & Quiz Generator")
+    quiz_topic = st.text_input("Quiz Topic / Subject Header", placeholder="e.g. Thermodynamics, Machine Learning")
+    c1, c2 = st.columns(2)
+    with c1:
+        num_mcqs = st.slider("Number of Questions", min_value=5, max_value=30, value=10)
+    with c2:
+        difficulty = st.selectbox("Difficulty Level", ["Easy", "Medium", "Hard", "Mixed"])
+    
+    quiz_file = st.file_uploader("Optional: Upload Source Document (PDF/DOCX)", type=["pdf", "docx", "txt"], key="quiz_file_input")
+
+    if st.button("🎯 Generate MCQs Test", key="tab6_btn"):
+        if not quiz_topic.strip() and not quiz_file:
+            st.warning("⚠️ Please provide either a topic name or upload a document.")
+        else:
+            try:
+                with st.spinner("Generating MCQs Quiz..."):
+                    extracted_text = ""
+                    if quiz_file:
+                        if quiz_file.name.endswith(".pdf"):
+                            reader = pypdf.PdfReader(quiz_file)
+                            extracted_text = "\n".join([p.extract_text() or "" for p in reader.pages[:10]])
+                        elif quiz_file.name.endswith(".docx"):
+                            doc = docx.Document(quiz_file)
+                            extracted_text = "\n".join([p.text for p in doc.paragraphs])
+                    
+                    mcq_prompt = f"""
+                    Create a structured Multiple Choice Questions (MCQs) test.
+                    Topic/Subject: {quiz_topic}
+                    Number of Questions: {num_mcqs}
+                    Difficulty Level: {difficulty}
+                    Source Text Context (if provided): {extracted_text[:6000]}
+
+                    Format:
+                    1. Question Statement
+                       A) Option 1
+                       B) Option 2
+                       C) Option 3
+                       D) Option 4
+                    
+                    At the end of all questions, provide an 'Answer Key & Detailed Explanations' section.
+                    """
+                    
+                    res_text = call_gemini_ai(mcq_prompt)
+                    render_output_section(res_text, f"{quiz_topic or 'Quiz'}_MCQs", "tab6")
+            except Exception as e:
+                st.error(f"Execution Error: {e}")
