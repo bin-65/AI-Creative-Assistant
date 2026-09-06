@@ -85,7 +85,7 @@ def generate_docx_bytes(title, text_content):
     except Exception:
         return text_content.encode("utf-8")
 
-# Safe Gemini AI Call with Progressive Retry Delay
+# Permanent Fix: Multi-Model Failover & Resilient AI Calling
 def call_gemini_ai(prompt_text):
     api_key = st.secrets.get("GEMINI_API_KEY", "")
     if not api_key:
@@ -93,25 +93,24 @@ def call_gemini_ai(prompt_text):
     
     clean_key = str(api_key).strip().strip('"').strip("'")
     client = genai.Client(api_key=clean_key)
-    models_to_try = ['gemini-2.5-flash', 'gemini-2.5-pro']
     
-    for model_name in models_to_try:
-        for attempt in range(4):
+    # Priority list of models (If 2.5-flash is busy, switches to 1.5-flash, then 1.5-pro)
+    models = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
+    
+    for model_name in models:
+        for attempt in range(3):
             try:
                 response = client.models.generate_content(
                     model=model_name,
-                    contents=prompt_text,
+                    contents=prompt_text
                 )
-                return response.text
+                if response and response.text:
+                    return response.text
             except Exception as e:
-                error_msg = str(e)
-                if "503" in error_msg or "UNAVAILABLE" in error_msg or "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
-                    time.sleep(2 * (attempt + 1))
-                    continue
-                else:
-                    break
-                    
-    raise Exception("Google AI Servers are busy right now. Please wait a few seconds and click Generate again.")
+                time.sleep(1 + attempt)  # Gradual pause before retry
+                continue
+                
+    raise Exception("AI service temporarily unavailable. Please try again in 5 seconds.")
 
 # Output Display Renderer
 def render_output_section(result_text, doc_title, key_prefix, selected_format):
