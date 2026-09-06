@@ -115,22 +115,53 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "❓ MCQs & Quiz Generator"
 ])
 
+# Standardized Universal Output Component (PDF + DOCX + On-Screen Text)
 def render_output_section(result_text, doc_title, key_prefix):
     st.markdown("---")
     st.success("🎉 Generated Successfully!")
     
+    # 1. Download Buttons Bar (PDF & Word Files)
     try:
         pdf_data = generate_pdf_bytes(doc_title, result_text)
         docx_data = generate_docx_bytes(doc_title, result_text)
         
         c1, c2 = st.columns([1, 1])
-        with c1: st.download_button("📥 Download PDF (.pdf)", pdf_data, f"{doc_title}.pdf", "application/pdf", use_container_width=True, key=f"{key_prefix}_pdf")
-        with c2: st.download_button("📄 Download Word (.docx)", docx_data, f"{doc_title}.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True, key=f"{key_prefix}_docx")
+        with c1: 
+            st.download_button(
+                "📥 Download PDF (.pdf)", 
+                pdf_data, 
+                f"{doc_title}.pdf", 
+                "application/pdf", 
+                use_container_width=True, 
+                key=f"{key_prefix}_pdf"
+            )
+        with c2: 
+            st.download_button(
+                "📄 Download Word (.docx)", 
+                docx_data, 
+                f"{doc_title}.docx", 
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document", 
+                use_container_width=True, 
+                key=f"{key_prefix}_docx"
+            )
     except Exception as export_err:
         st.error(f"Error generating download files: {export_err}")
         
-    st.markdown("### 📄 Result Output:")
+    st.markdown("---")
+    
+    # 2. On-Screen Display (Markdown Formatted)
+    st.markdown("### 📄 Formatted Result Preview:")
     st.markdown(result_text)
+    
+    # 3. On-Screen Raw Text Box (Easy One-Click Copy Option)
+    st.markdown("### 📋 Copy Raw Text:")
+    st.text_area(
+        label="Copyable Output", 
+        value=result_text, 
+        height=250, 
+        key=f"{key_prefix}_copy_area", 
+        label_visibility="collapsed"
+    )
 
 # TAB 1: CONTENT ASSISTANT
 with tab1:
@@ -146,7 +177,8 @@ with tab1:
     topic = st.text_area("Core Brief / Topic")
     if st.button("🚀 Generate Content", key="tab1_btn") and topic and target_audience:
         try:
-            res_text = call_gemini_ai(f"Platform: {platform}\nType: {content_type}\nTone: {tone}\nAudience: {target_audience}\nTopic: {topic}")
+            with st.spinner("Generating Content..."):
+                res_text = call_gemini_ai(f"Platform: {platform}\nType: {content_type}\nTone: {tone}\nAudience: {target_audience}\nTopic: {topic}")
             render_output_section(res_text, f"{platform}_Content", "tab1")
         except Exception as e:
             st.error(f"Execution Error: {e}")
@@ -158,7 +190,8 @@ with tab2:
     input_text = st.text_area("Source Text", height=150)
     if st.button("🌐 Translate Content", key="tab2_btn") and input_text.strip():
         try:
-            res_text = call_gemini_ai(f"Translate to {target_language}:\n\n{input_text}")
+            with st.spinner("Translating..."):
+                res_text = call_gemini_ai(f"Translate to {target_language}:\n\n{input_text}")
             render_output_section(res_text, f"Translation_{target_language}", "tab2")
         except Exception as e:
             st.error(f"Execution Error: {e}")
@@ -170,16 +203,17 @@ with tab3:
     uploaded_files = st.file_uploader("Upload Documents", type=["pdf", "docx", "txt"], accept_multiple_files=True)
     if st.button("⚡ Process Query", key="tab3_btn"):
         try:
-            extracted_text = ""
-            if uploaded_files:
-                for file in uploaded_files:
-                    if file.name.endswith(".pdf"):
-                        reader = pypdf.PdfReader(file)
-                        extracted_text += "\n".join([p.extract_text() or "" for p in reader.pages[:10]])
-                    elif file.name.endswith(".docx"):
-                        doc = docx.Document(file)
-                        extracted_text += "\n".join([p.text for p in doc.paragraphs])
-            res_text = call_gemini_ai(f"Extracted Text:\n{extracted_text[:8000]}\nUser Prompt: {user_prompt}")
+            with st.spinner("Processing Documents..."):
+                extracted_text = ""
+                if uploaded_files:
+                    for file in uploaded_files:
+                        if file.name.endswith(".pdf"):
+                            reader = pypdf.PdfReader(file)
+                            extracted_text += "\n".join([p.extract_text() or "" for p in reader.pages[:10]])
+                        elif file.name.endswith(".docx"):
+                            doc = docx.Document(file)
+                            extracted_text += "\n".join([p.text for p in doc.paragraphs])
+                res_text = call_gemini_ai(f"Extracted Text:\n{extracted_text[:8000]}\nUser Prompt: {user_prompt}")
             render_output_section(res_text, "Workspace_Output", "tab3")
         except Exception as e:
             st.error(f"Execution Error: {e}")
@@ -191,7 +225,8 @@ with tab4:
     academic_level = st.selectbox("Academic Level", ["Undergraduate", "Postgraduate / PhD", "College"])
     if st.button("✨ Generate Assignment", key="tab4_btn") and subject_topic.strip():
         try:
-            res_text = call_gemini_ai(f"Write paper on '{subject_topic}' for {academic_level} level.")
+            with st.spinner("Writing Academic Content..."):
+                res_text = call_gemini_ai(f"Write paper on '{subject_topic}' for {academic_level} level.")
             render_output_section(res_text, f"{subject_topic}_Assignment", "tab4")
         except Exception as e:
             st.error(f"Execution Error: {e}")
@@ -202,7 +237,8 @@ with tab5:
     doc_topic = st.text_input("Document Topic")
     if st.button("✨ Build Document", key="tab5_btn") and doc_topic.strip():
         try:
-            res_text = call_gemini_ai(f"Create a detailed document on '{doc_topic}'.")
+            with st.spinner("Building Document..."):
+                res_text = call_gemini_ai(f"Create a detailed document on '{doc_topic}'.")
             render_output_section(res_text, f"{doc_topic}_Document", "tab5")
         except Exception as e:
             st.error(f"Execution Error: {e}")
