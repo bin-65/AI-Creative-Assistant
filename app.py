@@ -1,5 +1,6 @@
 import streamlit as st
 from google import genai
+from google.genai.errors import APIError
 import pypdf
 import docx
 from docx import Document
@@ -85,37 +86,51 @@ def generate_docx_bytes(title, text_content):
     except Exception:
         return text_content.encode("utf-8")
 
-# Permanent Fix: Multi-Model Failover & Resilient AI Calling
+# Multi-Key Rotation Engine with Model Fallbacks
 def call_gemini_ai(prompt_text):
-    api_key = st.secrets.get("GEMINI_API_KEY", "")
-    if not api_key:
-        raise Exception("GEMINI_API_KEY Missing in Streamlit Secrets!")
+    raw_keys = st.secrets.get("GEMINI_API_KEY", "")
+    if not raw_keys:
+        raise Exception("Secrets mein GEMINI_API_KEY mojood nahi hai. Pehle st.secrets mein API Key add karein.")
     
-    clean_key = str(api_key).strip().strip('"').strip("'")
-    client = genai.Client(api_key=clean_key)
+    # Extract keys (split by comma if multiple keys are provided)
+    keys_list = [k.strip().strip('"').strip("'") for k in str(raw_keys).split(",") if k.strip()]
     
-    # Priority list of models (If 2.5-flash is busy, switches to 1.5-flash, then 1.5-pro)
-    models = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
+    models_to_try = [
+        "gemini-2.5-flash",
+        "gemini-1.5-flash",
+        "gemini-2.5-pro",
+        "gemini-1.5-pro"
+    ]
     
-    for model_name in models:
-        for attempt in range(3):
-            try:
-                response = client.models.generate_content(
-                    model=model_name,
-                    contents=prompt_text
-                )
-                if response and response.text:
-                    return response.text
-            except Exception as e:
-                time.sleep(1 + attempt)  # Gradual pause before retry
-                continue
-                
-    raise Exception("AI service temporarily unavailable. Please try again in 5 seconds.")
+    last_error_msg = ""
+    
+    # Loop through each API Key
+    for api_key in keys_list:
+        client = genai.Client(api_key=api_key)
+        
+        # Loop through each Model for the current key
+        for model_name in models_to_try:
+            for attempt in range(1, 3):
+                try:
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=prompt_text
+                    )
+                    if response and response.text:
+                        return response.text
+                except APIError as e:
+                    last_error_msg = f"API Error ({model_name}): {e.message if hasattr(e, 'message') else str(e)}"
+                    time.sleep(1.5)
+                except Exception as e:
+                    last_error_msg = f"Error ({model_name}): {str(e)}"
+                    time.sleep(1)
+                    
+    raise Exception(f"Tamam API Keys aur Models busy hain. Thodi der baad try karein. Details: {last_error_msg}")
 
 # Output Display Renderer
 def render_output_section(result_text, doc_title, key_prefix, selected_format):
     st.markdown("---")
-    st.success("🎉 Content Generated Successfully!")
+    st.success("🎉 Content Successfully Generate Ho Gaya!")
     
     if selected_format == "PDF Document (.pdf)":
         st.markdown("### 📥 Download PDF Document")
@@ -156,7 +171,7 @@ def render_output_section(result_text, doc_title, key_prefix, selected_format):
 
 # Sidebar
 st.sidebar.markdown("### ⚙️ System Status")
-st.sidebar.success("✨ **Usman AI Studio Active**")
+st.sidebar.success("✨ **Usman AI Studio Active (Multi-Key Rotation Enabled)**")
 st.sidebar.markdown("---")
 
 # Main Navigation
@@ -187,10 +202,10 @@ with tab1:
     
     if st.button("🚀 Generate Content", key="t1_gen_btn"):
         if not topic_1.strip():
-            st.warning("⚠️ Please enter a topic brief.")
+            st.warning("⚠️ Pehle topic brief likhein.")
         else:
             try:
-                with st.spinner("Generating Content..."):
+                with st.spinner("AI Server respond kar raha hai, please wait..."):
                     res_text = call_gemini_ai(f"Platform: {platform}\nType: {content_type}\nTone: {tone}\nAudience: {target_audience}\nTopic: {topic_1}")
                 st.session_state["out_tab1"] = res_text
                 st.session_state["fmt_tab1"] = export_fmt_1
@@ -209,10 +224,10 @@ with tab2:
     
     if st.button("🌐 Translate Content", key="t2_gen_btn"):
         if not input_text_2.strip():
-            st.warning("⚠️ Please enter text to translate.")
+            st.warning("⚠️ Translation ke liye text darj karein.")
         else:
             try:
-                with st.spinner("Translating..."):
+                with st.spinner("Translate ho raha hai..."):
                     res_text = call_gemini_ai(f"Translate to {target_language}:\n\n{input_text_2}")
                 st.session_state["out_tab2"] = res_text
                 st.session_state["fmt_tab2"] = export_fmt_2
@@ -231,7 +246,7 @@ with tab3:
     
     if st.button("⚡ Process Query", key="t3_gen_btn"):
         try:
-            with st.spinner("Processing Documents..."):
+            with st.spinner("Files process ho rahi hain..."):
                 extracted_text = ""
                 if uploaded_files_3:
                     for file in uploaded_files_3:
@@ -259,10 +274,10 @@ with tab4:
     
     if st.button("✨ Generate Assignment", key="t4_gen_btn"):
         if not subject_topic_4.strip():
-            st.warning("⚠️ Please enter a topic header.")
+            st.warning("⚠️ Pehle topic header enter karein.")
         else:
             try:
-                with st.spinner("Writing Academic Content..."):
+                with st.spinner("Academic content tayyar ho raha hai..."):
                     res_text = call_gemini_ai(f"Write paper on '{subject_topic_4}' for {academic_level_4} level.")
                 st.session_state["out_tab4"] = res_text
                 st.session_state["fmt_tab4"] = export_fmt_4
@@ -280,10 +295,10 @@ with tab5:
     
     if st.button("✨ Build Document", key="t5_gen_btn"):
         if not doc_topic_5.strip():
-            st.warning("⚠️ Please enter a document topic.")
+            st.warning("⚠️ Pehle document topic enter karein.")
         else:
             try:
-                with st.spinner("Building Document..."):
+                with st.spinner("Document build ho raha hai..."):
                     res_text = call_gemini_ai(f"Create a detailed document on '{doc_topic_5}'.")
                 st.session_state["out_tab5"] = res_text
                 st.session_state["fmt_tab5"] = export_fmt_5
@@ -308,10 +323,10 @@ with tab6:
 
     if st.button("🎯 Generate MCQs Test", key="t6_gen_btn"):
         if not quiz_topic_6.strip() and not quiz_file_6:
-            st.warning("⚠️ Please provide either a topic name or upload a document.")
+            st.warning("⚠️ Yahan topic enter karein ya document upload karein.")
         else:
             try:
-                with st.spinner("Generating MCQs Quiz..."):
+                with st.spinner("Quiz generate ho rahi hai..."):
                     extracted_text = ""
                     if quiz_file_6:
                         if quiz_file_6.name.endswith(".pdf"):
