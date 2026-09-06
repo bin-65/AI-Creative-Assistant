@@ -7,6 +7,7 @@ from docx import Document
 from pptx import Presentation
 from fpdf import FPDF
 import io
+import time
 
 # Page configuration
 st.set_page_config(
@@ -71,7 +72,7 @@ def generate_docx_bytes(title, text_content):
     doc.save(bio)
     return bio.getvalue()
 
-# Gemini AI Engine Function
+# Gemini AI Engine Function (With Retry & Fallback Logic)
 def call_gemini_ai(prompt_text):
     api_key = st.secrets.get("GEMINI_API_KEY", "")
     if not api_key:
@@ -80,14 +81,27 @@ def call_gemini_ai(prompt_text):
     clean_key = str(api_key).strip().strip('"').strip("'")
     client = genai.Client(api_key=clean_key)
     
-    try:
-        response = client.models.generate_content(
-            model='gemini-3.6-flash',
-            contents=prompt_text,
-        )
-        return response.text
-    except Exception as e:
-        raise Exception(f"Gemini API Execution Failed: {str(e)}")
+    # Preferred models list in case primary model faces high traffic
+    models_to_try = ['gemini-3.6-flash', 'gemini-2.5-flash']
+    
+    for model_name in models_to_try:
+        # Retry up to 3 times per model
+        for attempt in range(3):
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt_text,
+                )
+                return response.text
+            except Exception as e:
+                error_msg = str(e)
+                if "503" in error_msg or "UNAVAILABLE" in error_msg:
+                    time.sleep(2)  # Wait 2 seconds before retrying
+                    continue
+                else:
+                    break
+                    
+    raise Exception("Server is currently overloaded. Please try clicking the button once more in a few seconds.")
 
 # System Status Sidebar
 st.sidebar.markdown("### ⚙️ System Status")
