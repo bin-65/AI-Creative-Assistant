@@ -85,7 +85,7 @@ def generate_docx_bytes(title, text_content):
     except Exception:
         return text_content.encode("utf-8")
 
-# Gemini AI Call
+# Safe Gemini AI Call with Progressive Retry Delay
 def call_gemini_ai(prompt_text):
     api_key = st.secrets.get("GEMINI_API_KEY", "")
     if not api_key:
@@ -93,10 +93,10 @@ def call_gemini_ai(prompt_text):
     
     clean_key = str(api_key).strip().strip('"').strip("'")
     client = genai.Client(api_key=clean_key)
-    models_to_try = ['gemini-3.6-flash', 'gemini-2.5-flash']
+    models_to_try = ['gemini-2.5-flash', 'gemini-2.5-pro']
     
     for model_name in models_to_try:
-        for attempt in range(3):
+        for attempt in range(4):
             try:
                 response = client.models.generate_content(
                     model=model_name,
@@ -105,15 +105,15 @@ def call_gemini_ai(prompt_text):
                 return response.text
             except Exception as e:
                 error_msg = str(e)
-                if "503" in error_msg or "UNAVAILABLE" in error_msg:
-                    time.sleep(1.5)
+                if "503" in error_msg or "UNAVAILABLE" in error_msg or "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
+                    time.sleep(2 * (attempt + 1))
                     continue
                 else:
                     break
                     
-    raise Exception("Server is busy. Please try clicking generate again in a few seconds.")
+    raise Exception("Google AI Servers are busy right now. Please wait a few seconds and click Generate again.")
 
-# Selected Format Output Renderer
+# Output Display Renderer
 def render_output_section(result_text, doc_title, key_prefix, selected_format):
     st.markdown("---")
     st.success("🎉 Content Generated Successfully!")
@@ -147,11 +147,12 @@ def render_output_section(result_text, doc_title, key_prefix, selected_format):
     elif selected_format == "On-Screen Text":
         st.markdown("### 📋 On-Screen Text & Copy Box")
         st.text_area(
-            label="Copy Output",
+            label="Copyable Text Box",
             value=result_text,
-            height=250,
+            height=220,
             key=f"{key_prefix}_copy_box"
         )
+        st.markdown("#### Preview:")
         st.markdown(result_text)
 
 # Sidebar
@@ -159,7 +160,7 @@ st.sidebar.markdown("### ⚙️ System Status")
 st.sidebar.success("✨ **Usman AI Studio Active**")
 st.sidebar.markdown("---")
 
-# Main Tabs Navigation
+# Main Navigation
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "✍️ Content Creator", 
     "🌐 Translator", 
@@ -169,7 +170,6 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "❓ MCQs & Quiz Generator"
 ])
 
-# Helper for Radio Options
 EXPORT_OPTIONS = ["PDF Document (.pdf)", "MS Word (.docx)", "On-Screen Text"]
 
 # TAB 1: CONTENT CREATOR
