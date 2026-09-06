@@ -33,6 +33,12 @@ st.markdown("""
         border-radius: 8px !important; font-weight: 600 !important;
         padding: 8px 18px !important; transition: all 0.3s ease !important;
     }
+    .stDownloadButton>button {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+        color: #ffffff !important; border: none !important;
+        border-radius: 8px !important; font-weight: 600 !important;
+        padding: 8px 18px !important; width: 100% !important;
+    }
     .stTabs [data-baseweb="tab-list"] { gap: 8px; }
     .stTabs [data-baseweb="tab"] {
         border-radius: 8px; padding: 8px 18px; background-color: #ffffff;
@@ -100,6 +106,48 @@ def call_gemini_ai(prompt_text):
                     
     raise Exception("Server is busy. Please try clicking generate again in a few seconds.")
 
+# Universal Output Component for ALL features
+def render_output_section(result_text, doc_title, key_prefix):
+    st.markdown("---")
+    st.success("🎉 Generated Successfully!")
+    
+    st.markdown("### 📥 Download Options")
+    try:
+        pdf_bytes = generate_pdf_bytes(doc_title, result_text)
+        docx_bytes = generate_docx_bytes(doc_title, result_text)
+        
+        c1, c2 = st.columns(2)
+        with c1:
+            st.download_button(
+                label="📥 Download as PDF (.pdf)",
+                data=pdf_bytes,
+                file_name=f"{doc_title}.pdf",
+                mime="application/pdf",
+                key=f"{key_prefix}_pdf_btn"
+            )
+        with c2:
+            st.download_button(
+                label="📄 Download as Word (.docx)",
+                data=docx_bytes,
+                file_name=f"{doc_title}.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                key=f"{key_prefix}_docx_btn"
+            )
+    except Exception as e:
+        st.error(f"Error preparing download files: {e}")
+
+    st.markdown("---")
+    st.markdown("### 📄 Formatted Text Output")
+    st.markdown(result_text)
+
+    st.markdown("### 📋 Copy Raw Text from Screen")
+    st.text_area(
+        label="Copyable Text Area",
+        value=result_text,
+        height=200,
+        key=f"{key_prefix}_text_area"
+    )
+
 # Sidebar
 st.sidebar.markdown("### ⚙️ System Status")
 st.sidebar.success("✨ **Usman AI Studio Active**")
@@ -115,93 +163,57 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "❓ MCQs & Quiz Generator"
 ])
 
-# Standardized Universal Output Component (PDF + DOCX + On-Screen Text)
-def render_output_section(result_text, doc_title, key_prefix):
-    st.markdown("---")
-    st.success("🎉 Generated Successfully!")
-    
-    # 1. Download Buttons Bar (PDF & Word Files)
-    try:
-        pdf_data = generate_pdf_bytes(doc_title, result_text)
-        docx_data = generate_docx_bytes(doc_title, result_text)
-        
-        c1, c2 = st.columns([1, 1])
-        with c1: 
-            st.download_button(
-                "📥 Download PDF (.pdf)", 
-                pdf_data, 
-                f"{doc_title}.pdf", 
-                "application/pdf", 
-                use_container_width=True, 
-                key=f"{key_prefix}_pdf"
-            )
-        with c2: 
-            st.download_button(
-                "📄 Download Word (.docx)", 
-                docx_data, 
-                f"{doc_title}.docx", 
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document", 
-                use_container_width=True, 
-                key=f"{key_prefix}_docx"
-            )
-    except Exception as export_err:
-        st.error(f"Error generating download files: {export_err}")
-        
-    st.markdown("---")
-    
-    # 2. On-Screen Display (Markdown Formatted)
-    st.markdown("### 📄 Formatted Result Preview:")
-    st.markdown(result_text)
-    
-    # 3. On-Screen Raw Text Box (Easy One-Click Copy Option)
-    st.markdown("### 📋 Copy Raw Text:")
-    st.text_area(
-        label="Copyable Output", 
-        value=result_text, 
-        height=250, 
-        key=f"{key_prefix}_copy_area", 
-        label_visibility="collapsed"
-    )
-
-# TAB 1: CONTENT ASSISTANT
+# TAB 1: CONTENT CREATOR
 with tab1:
     st.subheader("✍️ Social Media Content Generator")
     c1, c2 = st.columns(2)
     with c1:
-        platform = st.selectbox("Target Platform", ["LinkedIn", "Instagram", "Twitter / X", "Facebook"])
-        content_type = st.selectbox("Content Style", ["Informational Post", "Promotional / Ad", "Storytelling"])
+        platform = st.selectbox("Target Platform", ["LinkedIn", "Instagram", "Twitter / X", "Facebook"], key="t1_plat")
+        content_type = st.selectbox("Content Style", ["Informational Post", "Promotional / Ad", "Storytelling"], key="t1_style")
     with c2:
-        tone = st.selectbox("Tone & Persona", ["Professional", "Casual & Friendly", "Persuasive"])
-        target_audience = st.text_input("Target Audience", placeholder="e.g., Engineers, Students")
+        tone = st.selectbox("Tone & Persona", ["Professional", "Casual & Friendly", "Persuasive"], key="t1_tone")
+        target_audience = st.text_input("Target Audience", placeholder="e.g., Engineers, Students", key="t1_aud")
     
-    topic = st.text_area("Core Brief / Topic")
-    if st.button("🚀 Generate Content", key="tab1_btn") and topic and target_audience:
-        try:
-            with st.spinner("Generating Content..."):
-                res_text = call_gemini_ai(f"Platform: {platform}\nType: {content_type}\nTone: {tone}\nAudience: {target_audience}\nTopic: {topic}")
-            render_output_section(res_text, f"{platform}_Content", "tab1")
-        except Exception as e:
-            st.error(f"Execution Error: {e}")
+    topic = st.text_area("Core Brief / Topic", key="t1_topic")
+    if st.button("🚀 Generate Content", key="t1_gen_btn"):
+        if not topic or not target_audience:
+            st.warning("⚠️ Please enter Topic and Target Audience.")
+        else:
+            try:
+                with st.spinner("Generating Content..."):
+                    res_text = call_gemini_ai(f"Platform: {platform}\nType: {content_type}\nTone: {tone}\nAudience: {target_audience}\nTopic: {topic}")
+                st.session_state["res_tab1"] = res_text
+            except Exception as e:
+                st.error(f"Execution Error: {e}")
+
+    if "res_tab1" in st.session_state:
+        render_output_section(st.session_state["res_tab1"], f"{platform}_Content", "tab1")
 
 # TAB 2: TRANSLATOR
 with tab2:
     st.subheader("🌐 Global Multi-Language Translator")
-    target_language = st.selectbox("Target Language", ["English", "Urdu", "Arabic", "Hindi", "Spanish", "French", "German"])
-    input_text = st.text_area("Source Text", height=150)
-    if st.button("🌐 Translate Content", key="tab2_btn") and input_text.strip():
-        try:
-            with st.spinner("Translating..."):
-                res_text = call_gemini_ai(f"Translate to {target_language}:\n\n{input_text}")
-            render_output_section(res_text, f"Translation_{target_language}", "tab2")
-        except Exception as e:
-            st.error(f"Execution Error: {e}")
+    target_language = st.selectbox("Target Language", ["English", "Urdu", "Arabic", "Hindi", "Spanish", "French", "German"], key="t2_lang")
+    input_text = st.text_area("Source Text", height=150, key="t2_text")
+    if st.button("🌐 Translate Content", key="t2_gen_btn"):
+        if not input_text.strip():
+            st.warning("⚠️ Please enter text to translate.")
+        else:
+            try:
+                with st.spinner("Translating..."):
+                    res_text = call_gemini_ai(f"Translate to {target_language}:\n\n{input_text}")
+                st.session_state["res_tab2"] = res_text
+            except Exception as e:
+                st.error(f"Execution Error: {e}")
+
+    if "res_tab2" in st.session_state:
+        render_output_section(st.session_state["res_tab2"], f"Translation_{target_language}", "tab2")
 
 # TAB 3: SMART WORKSPACE
 with tab3:
     st.subheader("⚡ Smart File Workspace")
-    user_prompt = st.text_area("Analysis Prompt", height=100)
-    uploaded_files = st.file_uploader("Upload Documents", type=["pdf", "docx", "txt"], accept_multiple_files=True)
-    if st.button("⚡ Process Query", key="tab3_btn"):
+    user_prompt = st.text_area("Analysis Prompt", height=100, key="t3_prompt")
+    uploaded_files = st.file_uploader("Upload Documents", type=["pdf", "docx", "txt"], accept_multiple_files=True, key="t3_files")
+    if st.button("⚡ Process Query", key="t3_gen_btn"):
         try:
             with st.spinner("Processing Documents..."):
                 extracted_text = ""
@@ -214,48 +226,63 @@ with tab3:
                             doc = docx.Document(file)
                             extracted_text += "\n".join([p.text for p in doc.paragraphs])
                 res_text = call_gemini_ai(f"Extracted Text:\n{extracted_text[:8000]}\nUser Prompt: {user_prompt}")
-            render_output_section(res_text, "Workspace_Output", "tab3")
+            st.session_state["res_tab3"] = res_text
         except Exception as e:
             st.error(f"Execution Error: {e}")
+
+    if "res_tab3" in st.session_state:
+        render_output_section(st.session_state["res_tab3"], "Workspace_Output", "tab3")
 
 # TAB 4: ACADEMIC WRITER
 with tab4:
     st.subheader("📚 Academic & Assignment Writer")
-    subject_topic = st.text_input("Topic Header")
-    academic_level = st.selectbox("Academic Level", ["Undergraduate", "Postgraduate / PhD", "College"])
-    if st.button("✨ Generate Assignment", key="tab4_btn") and subject_topic.strip():
-        try:
-            with st.spinner("Writing Academic Content..."):
-                res_text = call_gemini_ai(f"Write paper on '{subject_topic}' for {academic_level} level.")
-            render_output_section(res_text, f"{subject_topic}_Assignment", "tab4")
-        except Exception as e:
-            st.error(f"Execution Error: {e}")
+    subject_topic = st.text_input("Topic Header", key="t4_topic")
+    academic_level = st.selectbox("Academic Level", ["Undergraduate", "Postgraduate / PhD", "College"], key="t4_level")
+    if st.button("✨ Generate Assignment", key="t4_gen_btn"):
+        if not subject_topic.strip():
+            st.warning("⚠️ Please enter a topic header.")
+        else:
+            try:
+                with st.spinner("Writing Academic Content..."):
+                    res_text = call_gemini_ai(f"Write paper on '{subject_topic}' for {academic_level} level.")
+                st.session_state["res_tab4"] = res_text
+            except Exception as e:
+                st.error(f"Execution Error: {e}")
+
+    if "res_tab4" in st.session_state:
+        render_output_section(st.session_state["res_tab4"], f"{subject_topic}_Assignment", "tab4")
 
 # TAB 5: DOCUMENT HUB
 with tab5:
     st.subheader("📑 Advanced Document Hub")
-    doc_topic = st.text_input("Document Topic")
-    if st.button("✨ Build Document", key="tab5_btn") and doc_topic.strip():
-        try:
-            with st.spinner("Building Document..."):
-                res_text = call_gemini_ai(f"Create a detailed document on '{doc_topic}'.")
-            render_output_section(res_text, f"{doc_topic}_Document", "tab5")
-        except Exception as e:
-            st.error(f"Execution Error: {e}")
+    doc_topic = st.text_input("Document Topic", key="t5_topic")
+    if st.button("✨ Build Document", key="t5_gen_btn"):
+        if not doc_topic.strip():
+            st.warning("⚠️ Please enter a document topic.")
+        else:
+            try:
+                with st.spinner("Building Document..."):
+                    res_text = call_gemini_ai(f"Create a detailed document on '{doc_topic}'.")
+                st.session_state["res_tab5"] = res_text
+            except Exception as e:
+                st.error(f"Execution Error: {e}")
+
+    if "res_tab5" in st.session_state:
+        render_output_section(st.session_state["res_tab5"], f"{doc_topic}_Document", "tab5")
 
 # TAB 6: MCQS & QUIZ GENERATOR
 with tab6:
     st.subheader("❓ MCQs & Quiz Generator")
-    quiz_topic = st.text_input("Quiz Topic / Subject Header", placeholder="e.g. Thermodynamics, Machine Learning")
+    quiz_topic = st.text_input("Quiz Topic / Subject Header", placeholder="e.g. Thermodynamics, Machine Learning", key="t6_topic")
     c1, c2 = st.columns(2)
     with c1:
-        num_mcqs = st.slider("Number of Questions", min_value=5, max_value=30, value=10)
+        num_mcqs = st.slider("Number of Questions", min_value=5, max_value=30, value=10, key="t6_num")
     with c2:
-        difficulty = st.selectbox("Difficulty Level", ["Easy", "Medium", "Hard", "Mixed"])
+        difficulty = st.selectbox("Difficulty Level", ["Easy", "Medium", "Hard", "Mixed"], key="t6_diff")
     
-    quiz_file = st.file_uploader("Optional: Upload Source Document (PDF/DOCX)", type=["pdf", "docx", "txt"], key="quiz_file_input")
+    quiz_file = st.file_uploader("Optional: Upload Source Document (PDF/DOCX)", type=["pdf", "docx", "txt"], key="t6_file")
 
-    if st.button("🎯 Generate MCQs Test", key="tab6_btn"):
+    if st.button("🎯 Generate MCQs Test", key="t6_gen_btn"):
         if not quiz_topic.strip() and not quiz_file:
             st.warning("⚠️ Please provide either a topic name or upload a document.")
         else:
@@ -288,6 +315,9 @@ with tab6:
                     """
                     
                     res_text = call_gemini_ai(mcq_prompt)
-                    render_output_section(res_text, f"{quiz_topic or 'Quiz'}_MCQs", "tab6")
+                    st.session_state["res_tab6"] = res_text
             except Exception as e:
                 st.error(f"Execution Error: {e}")
+
+    if "res_tab6" in st.session_state:
+        render_output_section(st.session_state["res_tab6"], f"{quiz_topic or 'Quiz'}_MCQs", "tab6")
