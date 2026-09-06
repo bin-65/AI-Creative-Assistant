@@ -6,6 +6,7 @@ import pptx
 from docx import Document
 from pptx import Presentation
 from pptx.util import Inches, Pt
+from pptx.dml.color import RGBColor
 from fpdf import FPDF
 import io
 import time
@@ -18,7 +19,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom Styling (Original Blue Gradient Theme)
+# Custom UI Styling (Blue Theme + Presentation Studio Cards)
 st.markdown("""
     <style>
     .stApp { background-color: #f8fafc; color: #1e293b; }
@@ -29,6 +30,7 @@ st.markdown("""
     }
     .main-title { color: #0369a1; font-size: 28px; font-weight: 800; margin: 0; }
     .sub-title { color: #0284c7; font-size: 14px; margin-top: 4px; font-weight: 500; }
+    
     .stButton>button {
         background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
         color: #ffffff !important; border: none !important;
@@ -41,6 +43,24 @@ st.markdown("""
         color: #475569; border: 1px solid #e2e8f0;
     }
     .stTabs [aria-selected="true"] { background-color: #0284c7 !important; color: #ffffff !important; border: none !important; }
+    
+    /* Presentation Studio Custom Styles */
+    .ppt-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .template-badge {
+        background: #f1f5f9;
+        color: #0284c7;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -87,8 +107,6 @@ def generate_pptx_bytes(title, text_content):
 
     # Content Slides
     paragraphs = [p.strip() for p in text_content.split("\n\n") if p.strip()]
-    
-    # Group paragraphs into slides (approx 3 paragraphs per slide)
     chunk_size = 3
     for i in range(0, len(paragraphs), chunk_size):
         chunk = paragraphs[i:i + chunk_size]
@@ -142,14 +160,15 @@ def call_gemini_ai(prompt_text):
                 else:
                     break
                     
-    raise Exception("Server is currently experiencing high demand. Please try clicking the button once more in a few seconds.")
+    raise Exception("Server is experiencing high demand. Please click generate again in a few seconds.")
 
-# System Status Sidebar
+# Sidebar
 st.sidebar.markdown("### ⚙️ System Status")
 st.sidebar.success("✨ **Usman AI Studio Active**")
 st.sidebar.markdown("---")
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "📊 Presentation Studio",
     "✍️ Content Creator", 
     "🌐 Translator", 
     "⚡ Smart AI Workspace",
@@ -157,72 +176,106 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📑 Advanced Doc Hub"
 ])
 
-def render_output_section(result_text, doc_title, target_format, key_prefix, show_ppt=False):
+def render_output_section(result_text, doc_title, key_prefix, show_ppt=True):
     st.markdown("---")
     st.success("🎉 Generated Successfully!")
     
     try:
         pdf_data = generate_pdf_bytes(doc_title, result_text)
         docx_data = generate_docx_bytes(doc_title, result_text)
+        pptx_data = generate_pptx_bytes(doc_title, result_text)
         
-        if show_ppt:
-            pptx_data = generate_pptx_bytes(doc_title, result_text)
-            col_pdf, col_doc, col_ppt = st.columns([1, 1, 1])
-            with col_pdf:
-                st.download_button(
-                    label="📥 Download PDF (.pdf)", 
-                    data=pdf_data, 
-                    file_name=f"{doc_title}.pdf", 
-                    mime="application/pdf", 
-                    use_container_width=True,
-                    key=f"{key_prefix}_pdf"
-                )
-            with col_doc:
-                st.download_button(
-                    label="📄 Download Word (.docx)", 
-                    data=docx_data, 
-                    file_name=f"{doc_title}.docx", 
-                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", 
-                    use_container_width=True,
-                    key=f"{key_prefix}_docx"
-                )
-            with col_ppt:
-                st.download_button(
-                    label="📊 Download PowerPoint (.pptx)", 
-                    data=pptx_data, 
-                    file_name=f"{doc_title}.pptx", 
-                    mime="application/vnd.openxmlformats-officedocument.presentationml.presentation", 
-                    use_container_width=True,
-                    key=f"{key_prefix}_pptx"
-                )
-        else:
-            col_pdf, col_doc = st.columns([1, 1])
-            with col_pdf:
-                st.download_button(
-                    label="📥 Download PDF (.pdf)", 
-                    data=pdf_data, 
-                    file_name=f"{doc_title}.pdf", 
-                    mime="application/pdf", 
-                    use_container_width=True,
-                    key=f"{key_prefix}_pdf"
-                )
-            with col_doc:
-                st.download_button(
-                    label="📄 Download Word (.docx)", 
-                    data=docx_data, 
-                    file_name=f"{doc_title}.docx", 
-                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", 
-                    use_container_width=True,
-                    key=f"{key_prefix}_docx"
-                )
+        col_pdf, col_doc, col_ppt = st.columns([1, 1, 1])
+        with col_pdf:
+            st.download_button("📥 Download PDF (.pdf)", pdf_data, f"{doc_title}.pdf", "application/pdf", use_container_width=True, key=f"{key_prefix}_pdf")
+        with col_doc:
+            st.download_button("📄 Download Word (.docx)", docx_data, f"{doc_title}.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True, key=f"{key_prefix}_docx")
+        with col_ppt:
+            st.download_button("📊 Download Presentation (.pptx)", pptx_data, f"{doc_title}.pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation", use_container_width=True, key=f"{key_prefix}_pptx")
     except Exception as export_err:
         st.error(f"Error generating download files: {export_err}")
         
-    st.markdown("### 📄 Result Output:")
+    st.markdown("### 📄 Presentation Content Overview:")
     st.markdown(result_text)
 
-# TAB 1: CONTENT ASSISTANT
+# TAB 1: PRESENTATION STUDIO (Custom UI)
 with tab1:
+    st.markdown("## Create Slides with AI & Edit with Full Control")
+    
+    # Mode Selector
+    ppt_mode = st.radio("Creation Mode", ["✨ From Topic", "📄 From Document", "📑 From Outline"], horizontal=True)
+    
+    st.markdown("---")
+    
+    if "From Topic" in ppt_mode:
+        selected_template = st.selectbox("Selected Template", ["Annual Summary & Development Plan", "Technical Presentation", "Educational Workshop", "Business Pitch Deck"])
+        
+        # User Topic Input Box
+        topic_input = st.text_area("Slide Topic / Title", value="Four stroke engine", height=100)
+        
+        # Options & Controls
+        c1, c2, c3 = st.columns([2, 2, 2])
+        with c1:
+            use_search = st.checkbox("🔍 Enable Web Search Context", value=True)
+        with c2:
+            deep_think = st.checkbox("🧠 DeepThink Reasoning", value=True)
+        with c3:
+            slide_count = st.slider("Target Slide Count", 5, 20, 8)
+
+        st.markdown("##### Quick Sample Topics:")
+        q1, q2, q3, q4 = st.columns(4)
+        if q1.button("Health Management Program"): topic_input = "Health Management Program"
+        if q2.button("Summary Report"): topic_input = "Summary Report"
+        if q3.button("Mental Health Report"): topic_input = "Mental Health Report"
+        if q4.button("Data Analysis Report"): topic_input = "Data Analysis Report"
+
+        gen_ppt_btn = st.button("🚀 Generate Presentation Slides", key="ppt_gen_btn")
+
+        if gen_ppt_btn:
+            if not topic_input.strip():
+                st.warning("⚠️ Topic field empty.")
+            else:
+                try:
+                    with st.spinner("Generating Structured Presentation Deck..."):
+                        ppt_prompt = f"Create a structured {slide_count}-slide presentation deck on '{topic_input}'. Template Style: {selected_template}. Format slide by slide with slide titles and bullet points."
+                        res_text = call_gemini_ai(ppt_prompt)
+                    render_output_section(res_text, f"{topic_input}_Slides", "tab_ppt", show_ppt=True)
+                except Exception as e:
+                    st.error(f"Execution Error: {e}")
+
+    elif "From Document" in ppt_mode:
+        ppt_file = st.file_uploader("Upload PDF / Word to convert into Presentation Slides", type=["pdf", "docx", "txt"])
+        gen_doc_ppt = st.button("🚀 Convert Document to Presentation", key="ppt_doc_btn")
+        if gen_doc_ppt and ppt_file:
+            try:
+                with st.spinner("Converting Document to Presentation..."):
+                    extracted_text = ""
+                    if ppt_file.name.endswith(".pdf"):
+                        reader = pypdf.PdfReader(ppt_file)
+                        extracted_text = "\n".join([page.extract_text() or "" for page in reader.pages[:10]])
+                    elif ppt_file.name.endswith(".docx"):
+                        doc = docx.Document(ppt_file)
+                        extracted_text = "\n".join([p.text for p in doc.paragraphs])
+                    
+                    ppt_prompt = f"Convert the following document into a slide deck presentation:\n\n{extracted_text[:8000]}"
+                    res_text = call_gemini_ai(ppt_prompt)
+                render_output_section(res_text, "Document_Slides", "tab_ppt_doc", show_ppt=True)
+            except Exception as e:
+                st.error(f"Execution Error: {e}")
+
+    elif "From Outline" in ppt_mode:
+        outline_text = st.text_area("Paste Outline (Slide 1: Intro, Slide 2: Details...)", height=150)
+        gen_out_ppt = st.button("🚀 Build Slides from Outline", key="ppt_out_btn")
+        if gen_out_ppt and outline_text.strip():
+            try:
+                with st.spinner("Building Slides from Outline..."):
+                    res_text = call_gemini_ai(f"Expand this outline into a full slide deck presentation:\n{outline_text}")
+                render_output_section(res_text, "Outline_Slides", "tab_ppt_out", show_ppt=True)
+            except Exception as e:
+                st.error(f"Execution Error: {e}")
+
+# TAB 2: CONTENT ASSISTANT
+with tab2:
     st.subheader("✍️ Social Media Content Generator")
     col1, col2 = st.columns(2)
     with col1:
@@ -232,174 +285,85 @@ with tab1:
         tone = st.selectbox("Tone & Persona", ["Professional", "Casual & Friendly", "Persuasive", "Inspirational"])
         target_audience = st.text_input("Target Audience", placeholder="e.g., Tech Founders, Students")
     
-    output_format_1 = st.radio("Export Format Option", ["PDF Document (.pdf)", "MS Word (.docx)", "On-Screen Text"], horizontal=True, key="of1")
     topic = st.text_area("Core Brief / Topic", placeholder="Describe key talking points...")
-    submit_btn = st.button("🚀 Generate Content", key="tab1_btn")
+    submit_btn = st.button("🚀 Generate Content", key="tab2_btn")
 
-    if submit_btn:
-        if not topic or not target_audience:
-            st.warning("⚠️ Please complete required fields.")
-        else:
-            try:
-                prompt = f"Platform: {platform}\nType: {content_type}\nTone: {tone}\nAudience: {target_audience}\nTopic: {topic}\nWrite a well-formatted post."
-                with st.spinner("Processing with Gemini..."):
-                    res_text = call_gemini_ai(prompt)
-                render_output_section(res_text, f"{platform}_Content", output_format_1, "tab1", show_ppt=False)
-            except Exception as e:
-                st.error(f"Execution Error: {e}")
+    if submit_btn and topic and target_audience:
+        try:
+            prompt = f"Platform: {platform}\nType: {content_type}\nTone: {tone}\nAudience: {target_audience}\nTopic: {topic}\nWrite a post."
+            with st.spinner("Processing..."):
+                res_text = call_gemini_ai(prompt)
+            render_output_section(res_text, f"{platform}_Content", "tab2", show_ppt=False)
+        except Exception as e:
+            st.error(f"Execution Error: {e}")
 
-# TAB 2: TRANSLATOR
-with tab2:
-    st.subheader("🌐 Global Multi-Language Translator")
-    languages_50 = ["English", "Urdu", "Arabic", "Hindi", "Pashto", "Punjabi", "Sindhi", "Spanish", "French", "German", "Chinese"]
-    target_language = st.selectbox("Select Target Language", languages_50)
-    output_format_2 = st.radio("Export Format Option", ["PDF Document (.pdf)", "MS Word (.docx)", "On-Screen Text"], horizontal=True, key="of2")
-    input_text = st.text_area("Source Text", placeholder="Paste source text here...", height=150)
-    translate_btn = st.button("🌐 Translate Content", key="tab2_btn")
-
-    if translate_btn:
-        if not input_text.strip():
-            st.warning("⚠️ Please provide source text.")
-        else:
-            try:
-                translation_prompt = f"Automatically detect source language and translate accurately to {target_language}:\n\n{input_text}"
-                with st.spinner("Translating with Gemini..."):
-                    res_text = call_gemini_ai(translation_prompt)
-                render_output_section(res_text, f"Translation_{target_language}", output_format_2, "tab2", show_ppt=False)
-            except Exception as e:
-                st.error(f"Execution Error: {e}")
-
-# TAB 3: SMART WORKSPACE
+# TAB 3: TRANSLATOR
 with tab3:
+    st.subheader("🌐 Global Multi-Language Translator")
+    languages_50 = ["English", "Urdu", "Arabic", "Hindi", "Spanish", "French", "German", "Chinese"]
+    target_language = st.selectbox("Target Language", languages_50)
+    input_text = st.text_area("Source Text", placeholder="Paste text here...", height=150)
+    translate_btn = st.button("🌐 Translate Content", key="tab3_btn")
+
+    if translate_btn and input_text.strip():
+        try:
+            translation_prompt = f"Translate accurately to {target_language}:\n\n{input_text}"
+            with st.spinner("Translating..."):
+                res_text = call_gemini_ai(translation_prompt)
+            render_output_section(res_text, f"Translation_{target_language}", "tab3", show_ppt=False)
+        except Exception as e:
+            st.error(f"Execution Error: {e}")
+
+# TAB 4: SMART WORKSPACE
+with tab4:
     st.subheader("⚡ Smart File Workspace")
-    output_format_3 = st.radio("Select Preferred Export File", ["PDF Document (.pdf)", "MS Word (.docx)", "PowerPoint Presentation (.pptx)", "On-Screen Text"], horizontal=True, key="of3")
-    user_prompt = st.text_area("Analysis Prompt", placeholder="e.g., 10 mcqs with answers or detailed summary...", height=100)
-    uploaded_files = st.file_uploader(
-        "Upload Documents", 
-        type=["pdf", "docx", "pptx", "txt"], 
-        accept_multiple_files=True
-    )
-    process_btn = st.button("⚡ Process Query", key="tab3_btn")
+    user_prompt = st.text_area("Analysis Prompt", placeholder="e.g., summarize key points...", height=100)
+    uploaded_files = st.file_uploader("Upload Documents", type=["pdf", "docx", "pptx", "txt"], accept_multiple_files=True)
+    process_btn = st.button("⚡ Process Query", key="tab4_btn")
 
     if process_btn:
-        if not user_prompt.strip() and not uploaded_files:
-            st.warning("⚠️ Enter instructions or upload files.")
-        else:
-            try:
-                with st.spinner("Processing with Gemini..."):
-                    extracted_text_from_docs = ""
+        try:
+            with st.spinner("Processing..."):
+                extracted_text_from_docs = ""
+                if uploaded_files:
+                    for file in uploaded_files:
+                        if file.name.endswith(".pdf"):
+                            pdf_reader = pypdf.PdfReader(file)
+                            extracted_text_from_docs += "\n".join([page.extract_text() or "" for page in pdf_reader.pages[:10]])
+                        elif file.name.endswith(".docx"):
+                            doc_file = docx.Document(file)
+                            extracted_text_from_docs += "\n".join([p.text for p in doc_file.paragraphs])
 
-                    if uploaded_files:
-                        for file in uploaded_files:
-                            filename = file.name.lower()
-                            if filename.endswith(".pdf"):
-                                pdf_reader = pypdf.PdfReader(file)
-                                pdf_text = "\n".join([page.extract_text() or "" for page in pdf_reader.pages[:15]])
-                                extracted_text_from_docs += f"\n--- [PDF: {file.name}] ---\n{pdf_text}\n"
-                            elif filename.endswith(".docx"):
-                                doc_file = docx.Document(file)
-                                docx_text = "\n".join([p.text for p in doc_file.paragraphs])
-                                extracted_text_from_docs += f"\n--- [Word: {file.name}] ---\n{docx_text}\n"
-                            elif filename.endswith(".pptx"):
-                                prs_file = pptx.Presentation(file)
-                                pptx_text = ""
-                                for slide in prs_file.slides:
-                                    for shape in slide.shapes:
-                                        if hasattr(shape, "text"): pptx_text += shape.text + "\n"
-                                extracted_text_from_docs += f"\n--- [PPT: {file.name}] ---\n{pptx_text}\n"
-                            elif filename.endswith(".txt"):
-                                extracted_text_from_docs += f"\n--- [TXT: {file.name}] ---\n{file.read().decode('utf-8', errors='ignore')}\n"
+                res_text = call_gemini_ai(f"Extracted Content:\n{extracted_text_from_docs[:8000]}\nInstruction:\n{user_prompt}")
+            render_output_section(res_text, "Workspace_Output", "tab4", show_ppt=True)
+        except Exception as e:
+            st.error(f"Execution Error: {e}")
 
-                    final_instruction = ""
-                    if extracted_text_from_docs:
-                        final_instruction += f"=== EXTRACTED DOCUMENTS CONTENT ===\n{extracted_text_from_docs[:10000]}\n"
-                    if user_prompt.strip():
-                        final_instruction += f"=== USER INSTRUCTION ===\n{user_prompt}"
-
-                    res_text = call_gemini_ai(final_instruction)
-
-                render_output_section(res_text, "Workspace_Output", output_format_3, "tab3", show_ppt=True)
-            except Exception as e:
-                st.error(f"Execution Error: {e}")
-
-# TAB 4: ACADEMIC WRITER
-with tab4:
-    st.subheader("📚 Academic & Assignment Writer")
-    subject_topic = st.text_input("Topic / Subject Header", placeholder="e.g., Deep Learning & Neural Networks")
-    academic_level = st.selectbox("Academic Target Level", ["School Level", "High School / College", "Undergraduate", "Postgraduate / PhD"])
-    output_format_4 = st.radio("Export Assignment Format", ["PDF Document (.pdf)", "MS Word (.docx)", "PowerPoint Presentation (.pptx)", "On-Screen Text"], horizontal=True, key="of4")
-    assign_submit = st.button("✨ Generate Assignment", key="tab4_btn")
-
-    if assign_submit:
-        if not subject_topic.strip():
-            st.warning("⚠️ Topic is required.")
-        else:
-            try:
-                prompt = f"Write a structured academic paper on '{subject_topic}' for {academic_level} level."
-                with st.spinner("Generating academic assignment with Gemini..."):
-                    res_text = call_gemini_ai(prompt)
-                render_output_section(res_text, f"{subject_topic}_Assignment", output_format_4, "tab4", show_ppt=True)
-            except Exception as e:
-                st.error(f"Execution Error: {e}")
-
-# TAB 5: DOCUMENT HUB
+# TAB 5: ACADEMIC WRITER
 with tab5:
-    st.subheader("📑 Advanced Document & MCQ Hub")
-    doc_sub_tab1, doc_sub_tab2 = st.tabs(["📝 Create Document / Manual", "📤 Upload & Extract MCQs"])
+    st.subheader("📚 Academic & Assignment Writer")
+    subject_topic = st.text_input("Topic Header", placeholder="e.g., Solar Powered Absorption Refrigeration")
+    academic_level = st.selectbox("Academic Level", ["Undergraduate", "Postgraduate / PhD", "College"])
+    assign_submit = st.button("✨ Generate Assignment", key="tab5_btn")
 
-    with doc_sub_tab1:
-        doc_topic = st.text_input("Document Topic", placeholder="e.g., Fundamentals of Cybersecurity")
-        export_format = st.selectbox("Format Structure", ["MS Word (.docx)", "PDF Document (.pdf)", "PowerPoint Presentation (.pptx)"])
-        doc_length = st.selectbox("Scope", ["Detailed Notes (~500 words)", "Full Chapter (~1500 words)", "Full Manual (~3000+ words)"])
+    if assign_submit and subject_topic.strip():
+        try:
+            with st.spinner("Generating Academic Paper..."):
+                res_text = call_gemini_ai(f"Write a detailed academic paper on '{subject_topic}' for {academic_level} level.")
+            render_output_section(res_text, f"{subject_topic}_Assignment", "tab5", show_ppt=True)
+        except Exception as e:
+            st.error(f"Execution Error: {e}")
 
-        create_doc_btn = st.button("✨ Build Document", key="tab5_sub1_btn")
+# TAB 6: DOCUMENT HUB
+with tab6:
+    st.subheader("📑 Advanced Document Hub")
+    doc_topic = st.text_input("Document Topic", placeholder="e.g., Engineering Fluid Mechanics")
+    create_doc_btn = st.button("✨ Build Document", key="tab6_btn")
 
-        if create_doc_btn:
-            if not doc_topic.strip():
-                st.warning("⚠️ Topic required.")
-            else:
-                try:
-                    with st.spinner("Building document with Gemini..."):
-                        gen_prompt = f"Create a structured document on '{doc_topic}' with length {doc_length}."
-                        generated_text = call_gemini_ai(gen_prompt)
-                    render_output_section(generated_text, f"{doc_topic}_Document", export_format, "tab5_1", show_ppt=True)
-                except Exception as e:
-                    st.error(f"Execution Error: {e}")
-
-    with doc_sub_tab2:
-        uploaded_docs = st.file_uploader("Upload Course Material (PDF, Word, PPT, TXT)", type=["pdf", "docx", "pptx", "txt"], accept_multiple_files=True)
-        mcq_count = st.selectbox("Question Volume", ["10 MCQs", "20 MCQs", "30 MCQs", "50 MCQs", "100 MCQs"])
-        task_type = st.selectbox("Extraction Goal", ["Generate MCQs with Answer Key", "Summarize Key Concepts", "Extract Formulas"])
-        output_format_5 = st.radio("Export File Option", ["PDF Document (.pdf)", "MS Word (.docx)", "PowerPoint Presentation (.pptx)", "On-Screen Text"], horizontal=True, key="of5")
-
-        process_upload_btn = st.button("🚀 Process & Extract", key="tab5_sub2_btn")
-
-        if process_upload_btn:
-            if not uploaded_docs:
-                st.warning("⚠️ Upload files first.")
-            else:
-                try:
-                    with st.spinner("Extracting content with Gemini..."):
-                        extracted_full_text = ""
-                        for file in uploaded_docs:
-                            extracted_full_text += f"\n--- FILE: {file.name} ---\n"
-                            if file.name.endswith(".pdf"):
-                                pdf_reader = pypdf.PdfReader(file)
-                                for page in pdf_reader.pages[:15]: extracted_full_text += (page.extract_text() or "") + "\n"
-                            elif file.name.endswith(".docx"):
-                                doc = docx.Document(file)
-                                for p in doc.paragraphs: extracted_full_text += p.text + "\n"
-                            elif file.name.endswith(".pptx"):
-                                prs = pptx.Presentation(file)
-                                for slide in prs.slides:
-                                    for shape in slide.shapes:
-                                        if hasattr(shape, "text"): extracted_full_text += shape.text + "\n"
-                            elif file.name.endswith(".txt"):
-                                extracted_full_text += file.read().decode("utf-8", errors="ignore")
-
-                        mcq_prompt = f"Task: {task_type}\nQuantity: {mcq_count}\nSource Text:\n{extracted_full_text[:10000]}"
-                        output_text = call_gemini_ai(mcq_prompt)
-
-                    render_output_section(output_text, "Extracted_MCQs", output_format_5, "tab5_2", show_ppt=True)
-                except Exception as e:
-                    st.error(f"Execution Error: {e}")
+    if create_doc_btn and doc_topic.strip():
+        try:
+            with st.spinner("Building Document..."):
+                res_text = call_gemini_ai(f"Create a detailed document on '{doc_topic}'.")
+            render_output_section(res_text, f"{doc_topic}_Document", "tab6", show_ppt=True)
+        except Exception as e:
+            st.error(f"Execution Error: {e}")
